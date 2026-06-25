@@ -10,3 +10,5 @@ data:
   root_first_name: "FirstName"
   root_last_name: "LastName"
   root_email: "admin@fgc.com"
+  rabbitmq_usercreated_exchange: "fgc"
+  rabbitmq_usercreated_routingkey: "user.created"

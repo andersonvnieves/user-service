@@ -21,6 +21,7 @@ Write-Host "================================="
 kubectl apply -f .\k8s\secrets\sqlserver-pwd-secret.yml
 kubectl apply -f .\k8s\secrets\userapi-constr-secret.yml
 kubectl apply -f .\k8s\secrets\userapi-jwt-key-secret.yml
+kubectl apply -f .\k8s\secrets\userapi-mq-uri-secret.yml
 kubectl apply -f .\k8s\secrets\userapi-root-pwd-secret.yml
 
 Write-Host "================================="

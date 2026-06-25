@@ -67,3 +67,18 @@ spec:
             secretKeyRef:
               name: userapi-root-pwd-secret
               key: password
+        - name: RabbitMQ__URI
+          valueFrom:
+            secretKeyRef:
+              name: userapi-mq-uri-secret
+              key: conn
+        - name: RabbitMQ__UserCreatedEvent__Exchange
+          valueFrom:
+            configMapKeyRef:
+              name: userapi-config-map
+              key: rabbitmq_usercreated_exchange
+        - name: RabbitMQ__UserCreatedEvent__RoutingKey
+          valueFrom:
+            configMapKeyRef:
+              name: userapi-config-map
+              key: rabbitmq_usercreated_routingkey

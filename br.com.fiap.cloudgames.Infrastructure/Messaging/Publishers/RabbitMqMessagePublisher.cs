@@ -22,6 +22,12 @@ namespace br.com.fiap.cloudgames.Infrastructure.Messaging.Publishers
 
             var channel = await conn.CreateChannelAsync();
 
+            await channel.ExchangeDeclareAsync(
+                exchange: exchange,
+                type: ExchangeType.Topic,
+                durable: true,
+                autoDelete: false);
+
             await channel.QueueDeclareAsync(
                 queue: routingKey,
                 durable: true,
