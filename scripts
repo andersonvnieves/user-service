@@ -1,0 +1,30 @@
+-- Build Imnage
+docker build . -t fcg-userapi:latest
+
+-- Namespace
+kubectl apply -f .\k8s\fgc-namespace.yml
+-- Secrets
+kubectl apply -f .\k8s\secrets\sqlserver-pwd-secret.yml
+kubectl apply -f .\k8s\secrets\userapi-constr-secret.yml
+kubectl apply -f .\k8s\secrets\userapi-jwt-key-secret.yml
+kubectl apply -f .\k8s\secrets\userapi-root-pwd-secret.yml
+-- Config Maps
+kubectl apply -f .\k8s\config-maps\userapi-config-map.yml 
+-- Volumes
+kubectl apply -f .\k8s\volumes\userdb-pvc.yml   
+-- Services
+kubectl apply -f .\k8s\services\sqlserver-service.yml
+kubectl apply -f .\k8s\services\userapi-service.yml  
+-- Deployments
+kubectl apply -f .\k8s\deployments\sqlserver-deployment.yml
+kubectl apply -f .\k8s\deployments\userapi-deployment.yml  
+
+kubectl get deployments -n fgc
+kubectl get pods -n fgc    
+kubectl delete deployment userapi-deployment -n fgc
+
+--Tail logs
+kubectl lofg -f <npme-dp-pod>
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\deploy.ps1

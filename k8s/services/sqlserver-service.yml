@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlserver-service
+  namespace: fgc
+spec:
+  selector:
+    app: userdb
+  ports:
+  - port: 1433
+    targetPort: 1433
+  type: ClusterIP

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userdb-deployment
+  namespace: fgc
+  labels:
+    app: userdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: userdb
+  template:
+    metadata:
+      labels:
+        app: userdb
+    spec:
+      containers:
+      - name: userdb
+        image: mcr.microsoft.com/mssql/server:2025-latest
+        ports:
+        - containerPort: 1433
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sqlserver-pwd-secret
+              key: sa-password
+        volumeMounts:
+        - name: sql-data
+          mountPath: /var/opt/mssql
+      volumes:
+      - name: sql-data
+        persistentVolumeClaim:
+          claimName: userdb-pvc
+
