@@ -1,6 +1,0 @@
-@br.com.fiap.cloudgames.WebAPI_HostAddress = http://localhost:5149
-
-GET {{br.com.fiap.cloudgames.WebAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

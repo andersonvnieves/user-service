@@ -67,7 +67,7 @@ cd fiap-cloud-games
 ```
 ### 🧱 Rodar migrations
 ```bash
-dotnet ef database update --project br.com.fiap.cloudgames.Infrastructure --startup-project br.com.fiap.cloudgames.WebAPI 
+dotnet ef database update --project br.com.fiap.cloudgames.Users.Infrastructure --startup-project br.com.fiap.cloudgames.Users.WebAPI 
 ```
 ### ▶️ Executar a aplicação
 ```bash
@@ -76,6 +76,6 @@ dotnet run
 
 
 PS C:\REPOS\fiap-12nett-tc-02-userapi> dotnet ef migrations add InitialDB `
->>     --project br.com.fiap.cloudgames.Infrastructure `
->>     --startup-project br.com.fiap.cloudgames.WebAPI `
+>>     --project br.com.fiap.cloudgames.Users.Infrastructure `
+>>     --startup-project br.com.fiap.cloudgames.Users.WebAPI `
 >>     --output-dir Persistence/Migrations
