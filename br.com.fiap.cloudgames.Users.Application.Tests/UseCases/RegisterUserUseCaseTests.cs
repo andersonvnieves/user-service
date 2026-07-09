@@ -30,6 +30,7 @@ public class RegisterUserUseCaseTests
         repo.Setup(x => x.AddAsync(It.IsAny<br.com.fiap.cloudgames.Users.Domain.Aggregates.User>()))
             .Returns(Task.CompletedTask);
         uow.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask);
+        correlationContext.Setup(x => x.CorrelationId).Returns(Guid.NewGuid().ToString());
         publisher.Setup(x => x.PublishAsync(It.IsAny<br.com.fiap.cloudgames.Users.Application.Events.UserCreatedEvent>()))
             .Returns(Task.CompletedTask);
 
@@ -75,6 +76,36 @@ public class RegisterUserUseCaseTests
         uow.Verify(x => x.BeginTransactionAsync(), Times.Once);
         uow.Verify(x => x.RollbackAsync(), Times.Once);
         repo.Verify(x => x.AddAsync(It.IsAny<br.com.fiap.cloudgames.Users.Domain.Aggregates.User>()), Times.Never);
+        uow.Verify(x => x.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenRepositoryThrows_ShouldRollback_AndRethrow()
+    {
+        var auth = new Mock<IUserAuthService>(MockBehavior.Strict);
+        var uow = new Mock<IUnitOfWork>(MockBehavior.Strict);
+        var repo = new Mock<IUserRepository>(MockBehavior.Strict);
+        var publisher = new Mock<IUserCreatedEventPublisher>(MockBehavior.Strict);
+        var logger = new Mock<ILogger<RegisterUserUseCase>>(MockBehavior.Loose);
+        var correlationContext = new Mock<ICorrelationContext>(MockBehavior.Strict);
+
+        var request = ApplicationTestData.ValidRegisterUserRequest();
+
+        uow.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
+        auth.Setup(x => x.CreateUserAsync(request.Email, request.Password, "user"))
+            .ReturnsAsync("identity-123");
+        repo.Setup(x => x.AddAsync(It.IsAny<br.com.fiap.cloudgames.Users.Domain.Aggregates.User>()))
+            .ThrowsAsync(new InvalidOperationException("db error"));
+        uow.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask);
+
+        var sut = new RegisterUserUseCase(auth.Object, uow.Object, repo.Object, publisher.Object, logger.Object, correlationContext.Object);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ExecuteAsync(request));
+
+        uow.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        auth.Verify(x => x.CreateUserAsync(request.Email, request.Password, "user"), Times.Once);
+        repo.Verify(x => x.AddAsync(It.IsAny<br.com.fiap.cloudgames.Users.Domain.Aggregates.User>()), Times.Once);
+        uow.Verify(x => x.RollbackAsync(), Times.Once);
         uow.Verify(x => x.CommitAsync(), Times.Never);
     }
 }

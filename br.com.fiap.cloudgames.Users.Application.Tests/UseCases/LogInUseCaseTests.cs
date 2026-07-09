@@ -40,5 +40,48 @@ public class LogInUseCaseTests
         repo.Verify(x => x.GetByIdentityIdAsync("identity-123"), Times.Once);
         tokens.Verify(x => x.GenerateTokenAsync(user), Times.Once);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInvalidCredentials_ShouldThrowApplicationException()
+    {
+        var auth = new Mock<IUserAuthService>(MockBehavior.Strict);
+        var repo = new Mock<IUserRepository>(MockBehavior.Strict);
+        var tokens = new Mock<ITokenService>(MockBehavior.Strict);
+        var logger = new Mock<ILogger<LogInUseCase>>(MockBehavior.Loose);
+
+        var request = ApplicationTestData.ValidLogInRequest();
+        var normalizedEmail = new EmailAddress(request.email).Email;
+
+        auth.Setup(x => x.AuthenticateUserAsync(normalizedEmail, request.password))
+            .ThrowsAsync(new ApplicationException("Email or Password invalid"));
+
+        var sut = new LogInUseCase(auth.Object, repo.Object, tokens.Object, logger.Object);
+
+        var ex = await Assert.ThrowsAsync<ApplicationException>(() => sut.ExecuteAsync(request));
+        Assert.Equal("Email or Password invalid", ex.Message);
+
+        auth.Verify(x => x.AuthenticateUserAsync(normalizedEmail, request.password), Times.Once);
+        repo.Verify(x => x.GetByIdentityIdAsync(It.IsAny<string>()), Times.Never);
+        tokens.Verify(x => x.GenerateTokenAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInvalidEmailFormat_ShouldThrowDomainException()
+    {
+        var auth = new Mock<IUserAuthService>(MockBehavior.Strict);
+        var repo = new Mock<IUserRepository>(MockBehavior.Strict);
+        var tokens = new Mock<ITokenService>(MockBehavior.Strict);
+        var logger = new Mock<ILogger<LogInUseCase>>(MockBehavior.Loose);
+
+        var request = new LogInRequest { email = "not-an-email", password = "Pass@123!" };
+
+        var sut = new LogInUseCase(auth.Object, repo.Object, tokens.Object, logger.Object);
+
+        await Assert.ThrowsAsync<br.com.fiap.cloudgames.Users.Domain.Exceptions.DomainException>(() => sut.ExecuteAsync(request));
+
+        auth.Verify(x => x.AuthenticateUserAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        repo.Verify(x => x.GetByIdentityIdAsync(It.IsAny<string>()), Times.Never);
+        tokens.Verify(x => x.GenerateTokenAsync(It.IsAny<User>()), Times.Never);
+    }
 }
 

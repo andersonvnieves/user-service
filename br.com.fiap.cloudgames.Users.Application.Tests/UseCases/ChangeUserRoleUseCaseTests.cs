@@ -14,6 +14,30 @@ namespace br.com.fiap.cloudgames.Users.Application.Tests.UseCases;
 public class ChangeUserRoleUseCaseTests
 {
     [Fact]
+    public async Task ExecuteAsync_WhenUserIdIsInvalid_ShouldRollback_AndThrow()
+    {
+        var repo = new Mock<IUserRepository>(MockBehavior.Strict);
+        var auth = new Mock<IUserAuthService>(MockBehavior.Strict);
+        var uow = new Mock<IUnitOfWork>(MockBehavior.Strict);
+        var logger = new Mock<ILogger<ChangeUserRoleUseCase>>(MockBehavior.Loose);
+
+        var request = new ChangeUserRoleRequest { UserId = "invalid-guid", Role = "admin" };
+
+        uow.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
+        uow.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask);
+
+        var sut = new ChangeUserRoleUseCase(repo.Object, auth.Object, uow.Object, logger.Object);
+
+        var ex = await Assert.ThrowsAsync<ApplicationException>(() => sut.ExecuteAsync(request));
+        Assert.Contains("Invalid UserId Format", ex.Message);
+
+        uow.Verify(x => x.BeginTransactionAsync(), Times.Once);
+        uow.Verify(x => x.RollbackAsync(), Times.Once);
+        uow.Verify(x => x.CommitAsync(), Times.Never);
+        repo.Verify(x => x.GetUserByIdAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WhenUserDoesNotExist_ShouldRollback_AndThrow()
     {
         var repo = new Mock<IUserRepository>(MockBehavior.Strict);
