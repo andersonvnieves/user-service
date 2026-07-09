@@ -21,6 +21,8 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
+using br.com.fiap.cloudgames.Users.WebAPI.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,10 @@ builder.Logging.AddSimpleConsole(options =>
 //Settings
 builder.Services.Configure<JwtTokenSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
+
+//HttpContext 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 
 //Add Db Context
 builder.Services.AddDbContext<AppDbContext>(options =>

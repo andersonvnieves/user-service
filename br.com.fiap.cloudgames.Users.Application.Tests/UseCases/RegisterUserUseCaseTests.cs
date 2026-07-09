@@ -1,3 +1,4 @@
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
 using br.com.fiap.cloudgames.Users.Application.Tests.TestData;
@@ -19,6 +20,7 @@ public class RegisterUserUseCaseTests
         var repo = new Mock<IUserRepository>(MockBehavior.Strict);
         var publisher = new Mock<IUserCreatedEventPublisher>(MockBehavior.Strict);
         var logger = new Mock<ILogger<RegisterUserUseCase>>(MockBehavior.Loose);
+        var correlationContext = new Mock<ICorrelationContext>(MockBehavior.Strict);
 
         var request = ApplicationTestData.ValidRegisterUserRequest();
 
@@ -31,7 +33,7 @@ public class RegisterUserUseCaseTests
         publisher.Setup(x => x.PublishAsync(It.IsAny<br.com.fiap.cloudgames.Users.Application.Events.UserCreatedEvent>()))
             .Returns(Task.CompletedTask);
 
-        var sut = new RegisterUserUseCase(auth.Object, uow.Object, repo.Object, publisher.Object, logger.Object);
+        var sut = new RegisterUserUseCase(auth.Object, uow.Object, repo.Object, publisher.Object, logger.Object, correlationContext.Object);
 
         var response = await sut.ExecuteAsync(request);
 
@@ -57,6 +59,7 @@ public class RegisterUserUseCaseTests
         var repo = new Mock<IUserRepository>(MockBehavior.Strict);
         var publisher = new Mock<IUserCreatedEventPublisher>(MockBehavior.Strict);
         var logger = new Mock<ILogger<RegisterUserUseCase>>(MockBehavior.Loose);
+        var correlationContext = new Mock<ICorrelationContext>(MockBehavior.Strict);
 
         var request = ApplicationTestData.ValidRegisterUserRequest();
 
@@ -65,7 +68,7 @@ public class RegisterUserUseCaseTests
             .ThrowsAsync(new InvalidOperationException("boom"));
         uow.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask);
 
-        var sut = new RegisterUserUseCase(auth.Object, uow.Object, repo.Object, publisher.Object, logger.Object);
+        var sut = new RegisterUserUseCase(auth.Object, uow.Object, repo.Object, publisher.Object, logger.Object, correlationContext.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ExecuteAsync(request));
 

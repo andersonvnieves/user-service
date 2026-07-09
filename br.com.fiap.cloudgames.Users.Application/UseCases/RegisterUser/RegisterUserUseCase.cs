@@ -1,3 +1,4 @@
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
 using br.com.fiap.cloudgames.Users.Application.UnitsOfWork;
@@ -16,18 +17,21 @@ public class RegisterUserUseCase
     private readonly IUserRepository _userRepository;
     private readonly IUserCreatedEventPublisher _userCreatedEventPublisher;
     private readonly ILogger<RegisterUserUseCase> _logger;
+    private readonly ICorrelationContext _correlationContext;
 
     public RegisterUserUseCase(IUserAuthService userAuthService,
         IUnitOfWork unitOfWork,
         IUserRepository userRepository,
         IUserCreatedEventPublisher userCreatedEventPublisher,
-        ILogger<RegisterUserUseCase> logger)
+        ILogger<RegisterUserUseCase> logger,
+        ICorrelationContext correlationContext)
     {
         _userAuthService = userAuthService;
         _unitOfWork = unitOfWork;
         _userRepository = userRepository;
         _userCreatedEventPublisher = userCreatedEventPublisher;
         _logger = logger;
+        _correlationContext = correlationContext;
     }
 
     public async Task<RegisterUserResponse> ExecuteAsync(RegisterUserRequest request)
@@ -59,7 +63,7 @@ public class RegisterUserUseCase
         {
             await _userCreatedEventPublisher.PublishAsync(new Events.UserCreatedEvent()
             {
-                EventId = user.Id,
+                CorrelationId = _correlationContext.CorrelationId,
                 UserId = user.Id,
                 Name = user.Name.FullName,
                 Email = user.Email.Email,

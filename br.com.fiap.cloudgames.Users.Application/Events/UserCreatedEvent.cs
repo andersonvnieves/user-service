@@ -4,9 +4,8 @@ using System.Text;
 
 namespace br.com.fiap.cloudgames.Users.Application.Events
 {
-    public class UserCreatedEvent
+    public class UserCreatedEvent : IntegrationEvent
     {
-        public Guid EventId { get; init; }
         public Guid UserId { get; init; }
         public string Name { get; init; } = null!;
         public string Email { get; init; } = null!;

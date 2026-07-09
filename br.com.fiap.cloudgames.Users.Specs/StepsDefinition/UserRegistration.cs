@@ -1,3 +1,4 @@
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
 using br.com.fiap.cloudgames.Users.Application.UnitsOfWork;
@@ -20,6 +21,7 @@ public class UserRegistration
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly Mock<IUserCreatedEventPublisher> _userCreatedEventPublisher = new();
     private readonly Mock<ILogger<RegisterUserUseCase>>  _loggerMock = new();
+    private readonly Mock<ICorrelationContext> _correlationContextMock = new();
     private RegisterUserUseCase _registerUserUseCase;
 
     public UserRegistration()
@@ -31,7 +33,8 @@ public class UserRegistration
             _unitOfWorkMock.Object,
             _userRepositoryMock.Object,
             _userCreatedEventPublisher.Object,
-            _loggerMock.Object
+            _loggerMock.Object,
+            _correlationContextMock.Object
         );
     }
     
