@@ -17,6 +17,7 @@ using br.com.fiap.cloudgames.Users.WebAPI.Middlewares;
 using br.com.fiap.cloudgames.Users.WebAPI.Setup;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
@@ -71,6 +72,7 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+            NameClaimType = JwtRegisteredClaimNames.Name,
             RoleClaimType = ClaimTypes.Role
         };
     });
@@ -86,7 +88,6 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 //Messaging
 builder.Services.AddSingleton<RabbitMqConnection>();
-//builder.Services.AddScoped<IMessagePublisher, RabbitMqMessagePublisher>();
 builder.Services.AddScoped<IUserCreatedEventPublisher, UserCreatedEventPublisher>();
 
 //UseCases

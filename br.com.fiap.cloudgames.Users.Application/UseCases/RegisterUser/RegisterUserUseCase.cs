@@ -1,10 +1,11 @@
+using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
-using br.com.fiap.cloudgames.Users.Domain.Repositories;
 using br.com.fiap.cloudgames.Users.Application.UnitsOfWork;
+using br.com.fiap.cloudgames.Users.Domain.Aggregates;
 using br.com.fiap.cloudgames.Users.Domain.Enums;
+using br.com.fiap.cloudgames.Users.Domain.Repositories;
 using br.com.fiap.cloudgames.Users.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
-using br.com.fiap.cloudgames.Users.Application.Publishers;
 
 namespace br.com.fiap.cloudgames.Users.Application.UseCases.User.RegisterUser;
 
@@ -31,6 +32,7 @@ public class RegisterUserUseCase
 
     public async Task<RegisterUserResponse> ExecuteAsync(RegisterUserRequest request)
     {
+        br.com.fiap.cloudgames.Users.Domain.Aggregates.User user;
         try
         {
             _logger.LogInformation("Executing {UseCase}. Email={Email}", nameof(RegisterUserUseCase), request.Email);
@@ -38,19 +40,25 @@ public class RegisterUserUseCase
             var name = new Name(request.FirstName, request.LastName);
             var email = new EmailAddress(request.Email);
             var role = UserRoles.user.ToString();
-            await _unitOfWork.BeginTransactionAsync();
-            
-            var identityUserId = await _userAuthService.CreateUserAsync(request.Email, request.Password, role);
-            
-            var user = br.com.fiap.cloudgames.Users.Domain.Aggregates.User.Create(name, email, identityUserId);
-            await _userRepository.AddAsync(user);
-        
+            await _unitOfWork.BeginTransactionAsync();            
+            var identityUserId = await _userAuthService.CreateUserAsync(request.Email, request.Password, role);            
+            user = br.com.fiap.cloudgames.Users.Domain.Aggregates.User.Create(name, email, identityUserId);
+            await _userRepository.AddAsync(user);        
             await _unitOfWork.CommitAsync();
 
             _logger.LogInformation("User registered successfully. UserId={UserId}, Email={Email}", user.Id, user.Email.Email);
+        }
+        catch(Exception ex)
+        {
+            await _unitOfWork.RollbackAsync();
+            _logger.LogError(ex, "Error executing {UseCase}. Email={Email}", nameof(RegisterUserUseCase), request.Email);
+            throw;
+        }
 
-            _logger.LogInformation("Publishing UserCreated event. UserId={UserId}, Email={Email}", user.Id, user.Email.Email);
-            await _userCreatedEventPublisher.PublishAsync(new Events.UserCreatedEvent() { 
+        try
+        {
+            await _userCreatedEventPublisher.PublishAsync(new Events.UserCreatedEvent()
+            {
                 EventId = user.Id,
                 UserId = user.Id,
                 Name = user.Name.FullName,
@@ -66,13 +74,10 @@ public class RegisterUserUseCase
                 Role = user.Role.ToString()
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync();
-            _logger.LogError(ex, "Error executing {UseCase}. Email={Email}", nameof(RegisterUserUseCase), request.Email);
+            _logger.LogError(ex.StackTrace);
             throw;
         }
     }
-    
-    
 }

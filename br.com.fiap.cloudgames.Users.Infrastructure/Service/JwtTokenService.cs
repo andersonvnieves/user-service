@@ -26,8 +26,9 @@ public class JwtTokenService : ITokenService
         var identityUser = await _userManager.FindByIdAsync(user.IdentityId);
         var claims = new List<Claim>()
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, identityUser.Email)
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Name, user.Name.FullName),
+            new(JwtRegisteredClaimNames.Email, user.Email.Email),
         };
         
         var roles = await _userManager.GetRolesAsync(identityUser);
