@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fgc
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: users-api-secrets
+  namespace: fgc
+type: Opaque
+stringData:
+  sql-password: "rohPav-juKmeb-DIhku9!"
+  connection-string: "Server=users-db-service;Database=FGC_User;User Id=sa;Password=rohPav-juKmeb-DIhku9!;TrustServerCertificate=True"
+  jwt-key: "8594df0eb5ecb4c96f8824462cc7d2e1885c138908f2f7b4357af54b72ab2ed6"
+  root-password: "Admin@123"
+  rabbitmq-uri: "amqp://admin:admin123@rabbitmq-service:5672/"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: users-api-config
+  namespace: fgc
+data:
+  jwt-issuer: fgcapi
+  jwt-audience: fgcapi
+  jwt-token-ttl: "10"
+  root-first-name: FirstName
+  root-last-name: LastName
+  root-email: admin@fgc.com
+  user-created-exchange: fgc
+  user-created-routing-key: user.created
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: users-db-pvc
+  namespace: fgc
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-db
+  namespace: fgc
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: users-db }
+  template:
+    metadata:
+      labels: { app: users-db }
+    spec:
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/mssql/server:2025-latest
+          ports: [{ containerPort: 1433 }]
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom: { secretKeyRef: { name: users-api-secrets, key: sql-password } }
+          volumeMounts: [{ name: sql-data, mountPath: /var/opt/mssql }]
+      volumes:
+        - name: sql-data
+          persistentVolumeClaim: { claimName: users-db-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-db-service
+  namespace: fgc
+spec:
+  selector: { app: users-db }
+  ports: [{ port: 1433, targetPort: 1433 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: fgc
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: rabbitmq }
+  template:
+    metadata:
+      labels: { app: rabbitmq }
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:management
+          ports: [{ containerPort: 5672 }, { containerPort: 15672 }]
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: admin
+            - name: RABBITMQ_DEFAULT_PASS
+              value: admin123
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: fgc
+spec:
+  selector: { app: rabbitmq }
+  ports:
+    - { name: amqp, port: 5672, targetPort: 5672 }
+    - { name: management, port: 15672, targetPort: 15672 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-api
+  namespace: fgc
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: users-api }
+  template:
+    metadata:
+      labels: { app: users-api }
+    spec:
+      containers:
+        - name: users-api
+          image: fgc-user-service:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: ConnectionStrings__Default
+              valueFrom: { secretKeyRef: { name: users-api-secrets, key: connection-string } }
+            - name: Jwt__Issuer
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-issuer } }
+            - name: Jwt__Audience
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-audience } }
+            - name: Jwt__Key
+              valueFrom: { secretKeyRef: { name: users-api-secrets, key: jwt-key } }
+            - name: Jwt__TokenTtlInMinutes
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-token-ttl } }
+            - name: RootUser__FirstName
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-first-name } }
+            - name: RootUser__LastName
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-last-name } }
+            - name: RootUser__Email
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-email } }
+            - name: RootUser__Password
+              valueFrom: { secretKeyRef: { name: users-api-secrets, key: root-password } }
+            - name: RabbitMQ__URI
+              valueFrom: { secretKeyRef: { name: users-api-secrets, key: rabbitmq-uri } }
+            - name: RabbitMQ__UserCreatedEvent__Exchange
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: user-created-exchange } }
+            - name: RabbitMQ__UserCreatedEvent__RoutingKey
+              valueFrom: { configMapKeyRef: { name: users-api-config, key: user-created-routing-key } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-api-service
+  namespace: fgc
+spec:
+  type: NodePort
+  selector: { app: users-api }
+  ports: [{ port: 80, targetPort: 8080, nodePort: 30080 }]
