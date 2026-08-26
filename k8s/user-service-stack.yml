@@ -125,6 +125,22 @@ spec:
     metadata:
       labels: { app: users-api }
     spec:
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Aguardando o SQL Server (1433)..."
+              until nc -z -w 2 users-db-service 1433; do
+                sleep 2
+              done
+              echo "SQL Server online! Aguardando o RabbitMQ (5672)..."
+              until nc -z -w 2 rabbitmq-service 5672; do
+                sleep 2
+              done
+              echo "Todas as dependências estão prontas!"
       containers:
         - name: users-api
           image: fgc-user-service:latest

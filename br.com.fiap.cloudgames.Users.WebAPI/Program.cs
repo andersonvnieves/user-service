@@ -125,21 +125,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-//Run Migrations
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
-}
-
-//Seed Identity
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var configuration = services.GetRequiredService<IConfiguration>();
-    await IdentitySeeder.SeedRoles(services, configuration);
-    await IdentitySeeder.SeedBootstrapUser(services, configuration);
-}
+//Run Migrations and Seeds
+await app.InitializeDatabaseAsync();
 
 app.UseRequestLoggingMiddleware();
 app.UseErrorHandlingMiddleware();
