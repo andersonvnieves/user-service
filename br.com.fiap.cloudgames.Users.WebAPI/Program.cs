@@ -1,3 +1,4 @@
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
 using br.com.fiap.cloudgames.Users.Application.UnitsOfWork;
@@ -13,16 +14,16 @@ using br.com.fiap.cloudgames.Users.Infrastructure.Persistence;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence.Context;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence.Repositories;
 using br.com.fiap.cloudgames.Users.Infrastructure.Service;
+using br.com.fiap.cloudgames.Users.WebAPI.Context;
 using br.com.fiap.cloudgames.Users.WebAPI.Middlewares;
 using br.com.fiap.cloudgames.Users.WebAPI.Setup;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 using System.Security.Claims;
 using System.Text;
-using br.com.fiap.cloudgames.Users.Application.Abstractions;
-using br.com.fiap.cloudgames.Users.WebAPI.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,6 +129,8 @@ var app = builder.Build();
 //Run Migrations and Seeds
 await app.InitializeDatabaseAsync();
 
+app.UseRouting();
+
 app.UseRequestLoggingMiddleware();
 app.UseErrorHandlingMiddleware();
 
@@ -143,9 +146,11 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 app.MapControllers();
 

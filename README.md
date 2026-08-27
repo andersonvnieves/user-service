@@ -71,3 +71,11 @@ docker run --rm -p 8080:8080 fgc-user-service:latest
 ```
 
 Ao executar a imagem isoladamente, informe banco, JWT, usuário inicial e RabbitMQ por variáveis de ambiente.
+
+
+
+
+
+
+
+docker build -t fgc-user-service:latest . 
