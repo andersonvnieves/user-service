@@ -13,9 +13,6 @@ stringData:
   sql-password: "rohPav-juKmeb-DIhku9!"
   connection-string: "Server=users-db-service;Database=FGC_User;User Id=sa;Password=rohPav-juKmeb-DIhku9!;TrustServerCertificate=True"
   jwt-key: "8594df0eb5ecb4c96f8824462cc7d2e1885c138908f2f7b4357af54b72ab2ed6"  
-  root-password: "Admin@123"
-  AWS_ACCESS_KEY_ID: ""
-  AWS_SECRET_ACCESS_KEY: ""  
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -29,8 +26,7 @@ data:
   root-first-name: FirstName
   root-last-name: LastName
   root-email: admin@fgc.com
-  aws-sqs-user-created-queue-url: "https://sqs.sa-east-1.amazonaws.com/230287251097/user-created-queue"
-  AWS_REGION: "sa-east-1"
+  aws-sqs-user-created-queue-url: "https://sqs.us-east-1.amazonaws.com/257500279765/user-created-queue"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -39,6 +35,7 @@ metadata:
   namespace: fgc
 spec:
   accessModes: [ReadWriteOnce]
+  storageClassName: gp2
   resources:
     requests:
       storage: 1Gi
@@ -81,32 +78,6 @@ spec:
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: { name: rabbitmq, namespace: fgc }
-spec:
-  replicas: 1
-  selector: { matchLabels: { app: rabbitmq } }
-  template:
-    metadata: { labels: { app: rabbitmq } }
-    spec:
-      containers:
-        - name: rabbitmq
-          image: rabbitmq:management
-          ports: [{ containerPort: 5672 }, { containerPort: 15672 }]
-          env:
-            - { name: RABBITMQ_DEFAULT_USER, value: admin }
-            - { name: RABBITMQ_DEFAULT_PASS, value: admin123 }
----
-apiVersion: v1
-kind: Service
-metadata: { name: rabbitmq-service, namespace: fgc }
-spec:
-  selector: { app: rabbitmq }
-  ports:
-    - { name: amqp, port: 5672, targetPort: 5672 }
-    - { name: management, port: 15672, targetPort: 15672 }
----
-apiVersion: apps/v1
-kind: Deployment
 metadata:
   name: users-api
   namespace: fgc  
@@ -140,16 +111,10 @@ spec:
               echo "Todas as dependências estão prontas!"
       containers:
         - name: users-api
-          image: fgc-user-service:latest
+          image: 257500279765.dkr.ecr.us-east-1.amazonaws.com/fgc-user-service:latest
           imagePullPolicy: IfNotPresent
           ports: [{ containerPort: 8080 }]
           env:
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom: { secretKeyRef: { name: users-api-secrets, key: AWS_ACCESS_KEY_ID } }
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom: { secretKeyRef: { name: users-api-secrets, key: AWS_SECRET_ACCESS_KEY } }
-            - name: AWS_REGION
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: AWS_REGION } }
             - name: ConnectionStrings__Default
               valueFrom: { secretKeyRef: { name: users-api-secrets, key: connection-string } }
             - name: Jwt__Issuer

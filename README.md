@@ -79,3 +79,6 @@ Ao executar a imagem isoladamente, informe banco, JWT, usuário inicial e Rabbit
 
 
 docker build -t fgc-user-service:latest . 
+
+docker tag fgc-user-service:latest 257500279765.dkr.ecr.us-east-1.amazonaws.com/fgc-user-service:latest
+docker push 257500279765.dkr.ecr.us-east-1.amazonaws.com/fgc-user-service:latest

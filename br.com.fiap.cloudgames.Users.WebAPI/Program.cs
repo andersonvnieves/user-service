@@ -1,3 +1,4 @@
+using Amazon.SQS;
 using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
@@ -8,7 +9,6 @@ using br.com.fiap.cloudgames.Users.Application.UseCases.User.RegisterUser;
 using br.com.fiap.cloudgames.Users.Application.UseCases.User.RetrieveUser;
 using br.com.fiap.cloudgames.Users.Domain.Repositories;
 using br.com.fiap.cloudgames.Users.Infrastructure.Config;
-using br.com.fiap.cloudgames.Users.Infrastructure.Messagging;
 using br.com.fiap.cloudgames.Users.Infrastructure.Messaging.Publishers;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence.Context;
@@ -38,7 +38,7 @@ builder.Logging.AddSimpleConsole(options =>
 
 //Settings
 builder.Services.Configure<JwtTokenSettings>(builder.Configuration.GetSection("Jwt"));
-builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.Configure<AwsSqsSettings>(builder.Configuration.GetSection("AwsSQS"));
 
 //HttpContext 
 builder.Services.AddHttpContextAccessor();
@@ -94,7 +94,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 //Messaging
-builder.Services.AddSingleton<RabbitMqConnection>();
+builder.Services.AddAWSService<IAmazonSQS>();
 builder.Services.AddScoped<IUserCreatedEventPublisher, UserCreatedEventPublisher>();
 
 //UseCases
