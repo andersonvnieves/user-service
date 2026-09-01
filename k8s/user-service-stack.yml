@@ -29,7 +29,7 @@ data:
   root-first-name: FirstName
   root-last-name: LastName
   root-email: admin@fgc.com
-  aws-sqs-user-created-queue-url: "https://sqs.sa-east-1.amazonaws.com/230287251097/user-created-queue"
+  aws-sqs-user-created-queue-url: ""
   AWS_REGION: "sa-east-1"
 ---
 apiVersion: v1
