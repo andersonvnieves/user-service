@@ -1,6 +1,6 @@
 # User Service
 
-Serviço de usuários e autenticação. Registra usuários, realiza login, emite JWTs e permite a administradores consultar usuários ou alterar suas roles. Os dados são persistidos no SQL Server e novos usuários geram o evento `user.created` no RabbitMQ.
+Serviço de usuários e autenticação. Registra usuários, realiza login, emite JWTs e permite a administradores consultar usuários ou alterar suas roles. Os dados são persistidos no SQL Server e novos usuários geram o evento `user.created` no SQS.
 
 ## Componentes
 
@@ -15,7 +15,7 @@ Serviço de usuários e autenticação. Registra usuários, realiza login, emite
 
 - .NET SDK 10;
 - SQL Server na porta `1433`;
-- RabbitMQ na porta `5672` (painel: `15672`).
+- Uma Fila SQS para eventos de usuários criados.
 
 Para subir todos os serviços e suas dependências com Docker, veja o [README da orquestração](https://github.com/andersonvnieves/orchestration/blob/main/README.md).
 
@@ -32,9 +32,7 @@ $env:RootUser__FirstName = "Admin"
 $env:RootUser__LastName = "Cloud Games"
 $env:RootUser__Email = "admin@cloudgames.local"
 $env:RootUser__Password = "<SENHA_FORTE>"
-$env:RabbitMQ__URI = "amqp://<USUARIO>:<SENHA>@localhost:5672/"
-$env:RabbitMQ__UserCreatedEvent__Exchange = "fgc"
-$env:RabbitMQ__UserCreatedEvent__RoutingKey = "user.created"
+$env:AwsSQS__UserCreatedQueueUrl = "https://sqs.<AWS_REGION>.amazonaws.com/<AWS_ACCOUNT>/<QUEUE_NAME>"
 ```
 
 ## Executar localmente
@@ -70,4 +68,15 @@ docker build -t fgc-user-service:latest .
 docker run --rm -p 8080:8080 fgc-user-service:latest
 ```
 
-Ao executar a imagem isoladamente, informe banco, JWT, usuário inicial e RabbitMQ por variáveis de ambiente.
+Forneça as configurações de banco, JWT e SQS por variáveis de ambiente ao executar a imagem isoladamente.
+
+## Kubernetes
+
+```powershell
+kubectl apply -f k8s\user-service-stack.yml
+```
+
+## K6 - Load tests
+```powershell
+k6 run  k6\ingest-users.js
+```

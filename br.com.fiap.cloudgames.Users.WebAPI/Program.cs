@@ -1,3 +1,5 @@
+using Amazon.SQS;
+using br.com.fiap.cloudgames.Users.Application.Abstractions;
 using br.com.fiap.cloudgames.Users.Application.Publishers;
 using br.com.fiap.cloudgames.Users.Application.Services;
 using br.com.fiap.cloudgames.Users.Application.UnitsOfWork;
@@ -7,22 +9,21 @@ using br.com.fiap.cloudgames.Users.Application.UseCases.User.RegisterUser;
 using br.com.fiap.cloudgames.Users.Application.UseCases.User.RetrieveUser;
 using br.com.fiap.cloudgames.Users.Domain.Repositories;
 using br.com.fiap.cloudgames.Users.Infrastructure.Config;
-using br.com.fiap.cloudgames.Users.Infrastructure.Messagging;
 using br.com.fiap.cloudgames.Users.Infrastructure.Messaging.Publishers;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence.Context;
 using br.com.fiap.cloudgames.Users.Infrastructure.Persistence.Repositories;
 using br.com.fiap.cloudgames.Users.Infrastructure.Service;
+using br.com.fiap.cloudgames.Users.WebAPI.Context;
 using br.com.fiap.cloudgames.Users.WebAPI.Middlewares;
 using br.com.fiap.cloudgames.Users.WebAPI.Setup;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 using System.Security.Claims;
 using System.Text;
-using br.com.fiap.cloudgames.Users.Application.Abstractions;
-using br.com.fiap.cloudgames.Users.WebAPI.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +38,7 @@ builder.Logging.AddSimpleConsole(options =>
 
 //Settings
 builder.Services.Configure<JwtTokenSettings>(builder.Configuration.GetSection("Jwt"));
-builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.Configure<AwsSqsSettings>(builder.Configuration.GetSection("AwsSQS"));
 
 //HttpContext 
 builder.Services.AddHttpContextAccessor();
@@ -93,7 +94,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 //Messaging
-builder.Services.AddSingleton<RabbitMqConnection>();
+builder.Services.AddAWSService<IAmazonSQS>();
 builder.Services.AddScoped<IUserCreatedEventPublisher, UserCreatedEventPublisher>();
 
 //UseCases
@@ -125,21 +126,10 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-//Run Migrations
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
-}
+//Run Migrations and Seeds
+await app.InitializeDatabaseAsync();
 
-//Seed Identity
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var configuration = services.GetRequiredService<IConfiguration>();
-    await IdentitySeeder.SeedRoles(services, configuration);
-    await IdentitySeeder.SeedBootstrapUser(services, configuration);
-}
+app.UseRouting();
 
 app.UseRequestLoggingMiddleware();
 app.UseErrorHandlingMiddleware();
@@ -156,9 +146,11 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 app.MapControllers();
 
