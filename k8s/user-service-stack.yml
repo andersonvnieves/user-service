@@ -140,8 +140,8 @@ spec:
               echo "Todas as dependências estão prontas!"
       containers:
         - name: users-api
-          image: fgc-user-service:latest
-          imagePullPolicy: IfNotPresent
+          image: 230287251097.dkr.ecr.sa-east-1.amazonaws.com/fgc-user-service:latest
+          imagePullPolicy: Always
           ports: [{ containerPort: 8080 }]
           env:
             - name: AWS_ACCESS_KEY_ID
