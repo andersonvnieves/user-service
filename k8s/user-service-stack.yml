@@ -1,36 +1,86 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: fgc
----
-apiVersion: v1
-kind: Secret
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
 metadata:
   name: users-api-secrets
   namespace: fgc
-type: Opaque
-stringData:
-  sql-password: "rohPav-juKmeb-DIhku9!"
-  connection-string: "Server=users-db-service;Database=FGC_User;User Id=sa;Password=rohPav-juKmeb-DIhku9!;TrustServerCertificate=True"
-  jwt-key: "8594df0eb5ecb4c96f8824462cc7d2e1885c138908f2f7b4357af54b72ab2ed6"  
-  root-password: "Admin@123"
-  AWS_ACCESS_KEY_ID: ""
-  AWS_SECRET_ACCESS_KEY: ""  
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-parameter-store
+    kind: SecretStore
+  target:
+    name: users-api-secrets
+    creationPolicy: Owner
+  data:
+    - secretKey: sql-password
+      remoteRef:
+        key: /fgc/users/sql-password
+    - secretKey: connection-string
+      remoteRef:
+        key: /fgc/users/connection-string
+    - secretKey: jwt-key
+      remoteRef:
+        key: /fgc/jwt/secret
+    - secretKey: root-password
+      remoteRef:
+        key: /fgc/users/root-password
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: /fgc/aws/access-key-id
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: /fgc/aws/secret-access-key
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
 metadata:
   name: users-api-config
   namespace: fgc
-data:
-  jwt-issuer: fgcapi
-  jwt-audience: fgcapi
-  jwt-token-ttl: "10"
-  root-first-name: FirstName
-  root-last-name: LastName
-  root-email: admin@fgc.com
-  aws-sqs-user-created-queue-url: ""
-  AWS_REGION: "sa-east-1"
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-parameter-store
+    kind: SecretStore
+  target:
+    name: users-api-config
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      engineVersion: v2
+      data:
+        jwt-issuer: "{{ .jwt_issuer }}"
+        jwt-audience: "{{ .jwt_audience }}"
+        jwt-token-ttl: "{{ .jwt_token_ttl }}"
+        root-first-name: "{{ .root_first_name }}"
+        root-last-name: "{{ .root_last_name }}"
+        root-email: "{{ .root_email }}"
+        aws-sqs-user-created-queue-url: "{{ .sqs_user_created_url }}"
+        AWS_REGION: "{{ .aws_region }}"
+  data:
+    - secretKey: jwt_issuer
+      remoteRef:
+        key: /fgc/jwt/issuer
+    - secretKey: jwt_audience
+      remoteRef:
+        key: /fgc/jwt/audience
+    - secretKey: jwt_token_ttl
+      remoteRef:
+        key: /fgc/jwt/token-ttl
+    - secretKey: root_first_name
+      remoteRef:
+        key: /fgc/users/root-first-name
+    - secretKey: root_last_name
+      remoteRef:
+        key: /fgc/users/root-last-name
+    - secretKey: root_email
+      remoteRef:
+        key: /fgc/users/root-email
+    - secretKey: sqs_user_created_url
+      remoteRef:
+        key: /fgc/sqs/user-created-queue-url
+    - secretKey: aws_region
+      remoteRef:
+        key: /fgc/aws/region
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -58,7 +108,7 @@ spec:
     spec:
       containers:
         - name: sqlserver
-          image: mcr.microsoft.com/mssql/server:2025-latest
+          image: mcr.microsoft.com/mssql/server:2022-latest
           ports: [{ containerPort: 1433 }]
           env:
             - name: ACCEPT_EULA
@@ -177,6 +227,6 @@ metadata:
   name: users-api-service
   namespace: fgc  
 spec:
-  type: NodePort
+  type: ClusterIP
   selector: { app: users-api }
-  ports: [{ port: 80, targetPort: 8080, nodePort: 30080 }]
+  ports: [{ port: 80, targetPort: 8080 }]
