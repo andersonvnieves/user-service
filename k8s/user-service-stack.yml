@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: fgc
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: users-api-secrets
@@ -17,9 +17,6 @@ spec:
     name: users-api-secrets
     creationPolicy: Owner
   data:
-    - secretKey: sql-password
-      remoteRef:
-        key: /fgc/users/sql-password
     - secretKey: connection-string
       remoteRef:
         key: /fgc/users/connection-string
@@ -36,7 +33,7 @@ spec:
       remoteRef:
         key: /fgc/aws/secret-access-key
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: users-api-config
@@ -115,27 +112,27 @@ spec:
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom: { secretKeyRef: { name: users-api-secrets, key: AWS_SECRET_ACCESS_KEY } }
             - name: AWS_REGION
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: AWS_REGION } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: AWS_REGION } }
             - name: ConnectionStrings__Default
               valueFrom: { secretKeyRef: { name: users-api-secrets, key: connection-string } }
             - name: Jwt__Issuer
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-issuer } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: jwt-issuer } }
             - name: Jwt__Audience
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-audience } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: jwt-audience } }
             - name: Jwt__Key
               valueFrom: { secretKeyRef: { name: users-api-secrets, key: jwt-key } }
             - name: Jwt__TokenTtlInMinutes
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: jwt-token-ttl } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: jwt-token-ttl } }
             - name: RootUser__FirstName
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-first-name } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: root-first-name } }
             - name: RootUser__LastName
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-last-name } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: root-last-name } }
             - name: RootUser__Email
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: root-email } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: root-email } }
             - name: RootUser__Password
               valueFrom: { secretKeyRef: { name: users-api-secrets, key: root-password } }
             - name: AwsSQS__UserCreatedQueueUrl
-              valueFrom: { configMapKeyRef: { name: users-api-config, key: aws-sqs-user-created-queue-url } }
+              valueFrom: { secretKeyRef: { name: users-api-config, key: aws-sqs-user-created-queue-url } }
 ---
 apiVersion: v1
 kind: Service
