@@ -1,4 +1,4 @@
-name: CI/CD - Build, Test & Push to AWS ECR
+name: CI/CD - Build, Test, Push & Deploy to EKS
 
 on:
   push:
@@ -10,12 +10,14 @@ env:
   AWS_REGION: sa-east-1
   ECR_REPOSITORY: fgc-user-service
   IMAGE_TAG: latest
+  EKS_CLUSTER_NAME: fgc-cluster
+  DEPLOYMENT_NAME: users-api
+  CONTAINER_NAME: users-api
 
 jobs:
   build:
     name: Build Project
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -35,7 +37,6 @@ jobs:
     name: Run Tests
     needs: build
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -51,15 +52,11 @@ jobs:
     - name: Run tests
       run: dotnet test --configuration Release --verbosity normal
 
-  push-to-ecr:
-    name: Build Docker Image & Push to AWS ECR
+  push-and-deploy:
+    name: Build, Push & Deploy to EKS
     needs: [build, test]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
     - name: Checkout code
@@ -85,3 +82,16 @@ jobs:
         docker build -t $REGISTRY/$REPOSITORY:$TAG -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
         docker push $REGISTRY/$REPOSITORY:$TAG
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+    - name: Update KubeConfig
+      run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+    - name: Deploy (Rolling Update) to EKS
+      env:
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: ${{ env.ECR_REPOSITORY }}
+        TAG: ${{ github.sha }}
+      run: |
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.CONTAINER_NAME }}=$REGISTRY/$REPOSITORY:$TAG
+        
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }}
