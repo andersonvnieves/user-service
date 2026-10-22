@@ -13,6 +13,7 @@ env:
   EKS_CLUSTER_NAME: fgc-cluster
   DEPLOYMENT_NAME: users-api
   CONTAINER_NAME: users-api
+  NAMESPACE: fgc
 
 jobs:
   build:
@@ -92,6 +93,6 @@ jobs:
         REPOSITORY: ${{ env.ECR_REPOSITORY }}
         TAG: ${{ github.sha }}
       run: |
-        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.CONTAINER_NAME }}=$REGISTRY/$REPOSITORY:$TAG
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.CONTAINER_NAME }}=$REGISTRY/$REPOSITORY:$TAG -n ${{ env.NAMESPACE }}
         
-        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }}
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }}
